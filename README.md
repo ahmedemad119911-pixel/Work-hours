@@ -437,10 +437,15 @@
   var settings = loadJSON(SETTINGS_KEY, {standardHours:8, hourlyRate:0, multiplier:1.7, currency:'جنيه', restDays:[5]});
   if(!settings.restDays) settings.restDays = [5];
   var session = loadJSON(SESSION_KEY, null);
-  var entries = loadJSON(ENTRIES_KEY, []);
-  var holidays = loadJSON(HOLIDAYS_KEY, []);
-  var restOverrides = loadJSON(REST_OVERRIDES_KEY, []);
-  var absences = loadJSON(ABSENCES_KEY, []);
+  function validDate(x){ return x && typeof x.date === 'string' && x.date.length >= 7; }
+  var entries = loadJSON(ENTRIES_KEY, []).filter(validDate);
+  var holidays = loadJSON(HOLIDAYS_KEY, []).filter(validDate);
+  var restOverrides = loadJSON(REST_OVERRIDES_KEY, []).filter(validDate);
+  var absences = loadJSON(ABSENCES_KEY, []).filter(validDate);
+  saveJSON(ENTRIES_KEY, entries);
+  saveJSON(HOLIDAYS_KEY, holidays);
+  saveJSON(REST_OVERRIDES_KEY, restOverrides);
+  saveJSON(ABSENCES_KEY, absences);
   var LANG = loadJSON(LANG_KEY, 'ar');
   var t = I18N[LANG];
 
@@ -644,7 +649,7 @@
       return;
     }
     var byMonth = {};
-    function pushItem(dt, item){ var key=dt.slice(0,7); (byMonth[key]=byMonth[key]||[]).push(item); }
+    function pushItem(dt, item){ if(!dt || typeof dt!=='string' || dt.length<7) return; var key=dt.slice(0,7); (byMonth[key]=byMonth[key]||[]).push(item); }
     entries.forEach(function(e){ pushItem(e.date, {kind:'work', date:e.date, data:e}); });
     holidays.forEach(function(h){ pushItem(h.date, {kind:'holiday', date:h.date, data:h}); });
     restOverrides.forEach(function(r){ pushItem(r.date, {kind:'rest', date:r.date, data:r}); });
