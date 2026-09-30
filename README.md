@@ -1,4 +1,4 @@
- ## Work-hours-[index.html](https://github.com/user-attachments/files/32834818/index.html)
+[index.html](https://github.com/user-attachments/files/32876077/index.html)
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -634,6 +634,13 @@
 
   function renderHistory(){
     var list = document.getElementById('historyList');
+    try{
+      renderHistoryInner(list);
+    }catch(err){
+      list.innerHTML = '<div class="empty" style="color:var(--danger); text-align:start; direction:ltr;">RENDER ERROR:<br>'+(err && err.message ? err.message : err)+'<br><br>'+(err && err.stack ? err.stack.replace(/</g,'&lt;') : '')+'</div>';
+    }
+  }
+  function renderHistoryInner(list){
     if(entries.length===0 && holidays.length===0 && restOverrides.length===0 && absences.length===0){
       list.innerHTML = '<div class="empty">'+t.emptyHistory+'</div>';
       return;
