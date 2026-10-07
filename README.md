@@ -1,3 +1,4 @@
+
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -245,8 +246,14 @@
       <input type="number" id="setStandardHours" step="0.5" min="1" max="16">
     </div>
     <div class="field">
-      <label id="lblHourlyRate">—</label>
-      <input type="number" id="setHourlyRate" step="0.5" min="0">
+      <label id="lblComprehensiveSalary">—</label>
+      <input type="number" id="setComprehensiveSalary" step="0.5" min="0">
+      <div class="hint" id="hintComprehensiveSalary">—</div>
+    </div>
+    <div class="field">
+      <label id="lblInsuranceWage">—</label>
+      <input type="number" id="setInsuranceWage" step="0.5" min="0">
+      <div class="hint" id="hintInsuranceWage">—</div>
     </div>
     <div class="field">
       <label id="lblMultiplier">—</label>
@@ -353,7 +360,13 @@
       cancel:'إلغاء', save:'حفظ', deleteDay:'حذف اليوم ده',
       language:'اللغة',
       standardHoursLabel:'ساعات الشغل الرسمية في اليوم',
-      hourlyRateLabel:'سعر الساعة',
+      comprehensiveSalaryLabel:'الراتب الشامل',
+      comprehensiveSalaryHint:'الراتب الكلي شهريًا، بيتحسب عليه قيمة أيام الشغل والعطلات والإجازات المدفوعة',
+      insuranceWageLabel:'الأجر التأميني',
+      insuranceWageHint:'الأجر الأساسي اللي بيتحسب عليه الوقت الإضافي',
+      workDaysPayLbl:'قيمة أيام الشغل', holidaysPayLbl:'قيمة العطلات الرسمية',
+      restPayLbl:'قيمة الإجازات المدفوعة', absenceDeductionLbl:'خصم الغياب',
+      totalSalaryDueLbl:'إجمالي الراتب المستحق', grandTotalLbl:'الإجمالي الكلي (راتب + إضافي)',
       multiplierLabel:'معامل الوقت الإضافي',
       multiplierHint:'قيمة الساعة الإضافية = سعر الساعة × المعامل ده',
       currencyLabel:'العملة',
@@ -400,7 +413,13 @@
       cancel:'Cancel', save:'Save', deleteDay:'Delete this day',
       language:'Language',
       standardHoursLabel:'Standard work hours per day',
-      hourlyRateLabel:'Hourly rate',
+      comprehensiveSalaryLabel:'Comprehensive salary',
+      comprehensiveSalaryHint:'Total monthly salary; used to value work days, holidays and paid leave',
+      insuranceWageLabel:'Insurance wage',
+      insuranceWageHint:'Base wage used to calculate overtime pay',
+      workDaysPayLbl:'Work days pay', holidaysPayLbl:'Public holidays pay',
+      restPayLbl:'Paid leave pay', absenceDeductionLbl:'Absence deduction',
+      totalSalaryDueLbl:'Total salary due', grandTotalLbl:'Grand total (salary + overtime)',
       multiplierLabel:'Overtime multiplier',
       multiplierHint:'Overtime hour value = hourly rate × this multiplier',
       currencyLabel:'Currency',
@@ -434,8 +453,10 @@
   }
   function saveJSON(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error('storage error', e); } }
 
-  var settings = loadJSON(SETTINGS_KEY, {standardHours:8, hourlyRate:0, multiplier:1.7, currency:'جنيه', restDays:[5]});
+  var settings = loadJSON(SETTINGS_KEY, {standardHours:8, comprehensiveSalary:0, insuranceWage:0, multiplier:1.7, currency:'جنيه', restDays:[5]});
   if(!settings.restDays) settings.restDays = [5];
+  if(settings.comprehensiveSalary===undefined) settings.comprehensiveSalary = 0;
+  if(settings.insuranceWage===undefined) settings.insuranceWage = settings.hourlyRate ? settings.hourlyRate*settings.standardHours*30 : 0;
   var session = loadJSON(SESSION_KEY, null);
   function validDate(x){ return x && typeof x.date === 'string' && x.date.length >= 7; }
   var entries = loadJSON(ENTRIES_KEY, []).filter(validDate);
@@ -473,6 +494,15 @@
     var std = (settings.standardHours||8)*60;
     return {reg: Math.min(totalMin, std), ot: Math.max(0, totalMin-std)};
   }
+  function hourlyOvertimeRate(){
+    if(!settings.insuranceWage || settings.insuranceWage<=0) return 0;
+    var std = settings.standardHours || 8;
+    return settings.insuranceWage/30/std;
+  }
+  function dailySalaryRate(){
+    if(!settings.comprehensiveSalary || settings.comprehensiveSalary<=0) return 0;
+    return settings.comprehensiveSalary/30;
+  }
 
   function applyStaticText(){
     document.documentElement.dir = t.dir;
@@ -492,8 +522,12 @@
     document.getElementById('lblRestDays').textContent = t.restDaysLabel;
     document.getElementById('lblHolidays').textContent = t.holidaysLabel;
     document.getElementById('lblStandardHours').textContent = t.standardHoursLabel;
-    document.getElementById('lblHourlyRate').textContent = t.hourlyRateLabel;
-    document.getElementById('setHourlyRate').placeholder = LANG==='ar' ? 'اختياري' : 'optional';
+    document.getElementById('lblComprehensiveSalary').textContent = t.comprehensiveSalaryLabel;
+    document.getElementById('hintComprehensiveSalary').textContent = t.comprehensiveSalaryHint;
+    document.getElementById('setComprehensiveSalary').placeholder = LANG==='ar' ? 'اختياري' : 'optional';
+    document.getElementById('lblInsuranceWage').textContent = t.insuranceWageLabel;
+    document.getElementById('hintInsuranceWage').textContent = t.insuranceWageHint;
+    document.getElementById('setInsuranceWage').placeholder = LANG==='ar' ? 'اختياري' : 'optional';
     document.getElementById('lblMultiplier').textContent = t.multiplierLabel;
     document.getElementById('hintMultiplier').textContent = t.multiplierHint;
     document.getElementById('lblCurrency').textContent = t.currencyLabel;
@@ -572,9 +606,10 @@
       document.getElementById('todayRegular').textContent = fmtDur(split.reg);
       document.getElementById('todayOvertime').textContent = fmtDur(split.ot);
       var payRow=document.getElementById('todayPayRow');
-      if(settings.hourlyRate>0){
+      var hRate = hourlyOvertimeRate();
+      if(hRate>0){
         payRow.style.display='flex';
-        document.getElementById('todayPay').textContent = fmtMoney(split.ot/60*settings.hourlyRate*settings.multiplier)+' '+settings.currency;
+        document.getElementById('todayPay').textContent = fmtMoney(split.ot/60*hRate*settings.multiplier)+' '+settings.currency;
       }else{ payRow.style.display='none'; }
       staleBanner.classList.toggle('show', totalMin > 16*60);
     }else{
@@ -590,9 +625,10 @@
         document.getElementById('todayRegular').textContent = fmtDur(todaysEntry.regularMin);
         document.getElementById('todayOvertime').textContent = fmtDur(todaysEntry.overtimeMin);
         var payRow2=document.getElementById('todayPayRow');
-        if(settings.hourlyRate>0){
+        var hRate2 = hourlyOvertimeRate();
+        if(hRate2>0){
           payRow2.style.display='flex';
-          document.getElementById('todayPay').textContent = fmtMoney(todaysEntry.overtimeMin/60*settings.hourlyRate*settings.multiplier)+' '+settings.currency;
+          document.getElementById('todayPay').textContent = fmtMoney(todaysEntry.overtimeMin/60*hRate2*settings.multiplier)+' '+settings.currency;
         }else{ payRow2.style.display='none'; }
       }else{
         statusLine.className='status-line';
@@ -670,13 +706,33 @@
       html += '<div class="stat-cell"><span>'+t.workDaysLbl+'</span><span class="v mono">'+workDaysCount+'</span></div>';
       html += '<div class="stat-cell"><span>'+t.totalHoursLbl+'</span><span class="v mono">'+fmtDur(totalReg+totalOt)+'</span></div>';
       html += '<div class="stat-cell"><span>'+t.overtime+'</span><span class="v o mono">'+fmtDur(totalOt)+'</span></div>';
-      if(settings.hourlyRate>0){
-        html += '<div class="stat-cell"><span>'+t.overtimePayLbl+'</span><span class="v o mono">'+fmtMoney(totalOt/60*settings.hourlyRate*settings.multiplier)+' '+settings.currency+'</span></div>';
+      var dRate = dailySalaryRate();
+      var hRateMonth = hourlyOvertimeRate();
+      var overtimePayMonth = totalOt/60*hRateMonth*settings.multiplier;
+      if(hRateMonth>0){
+        html += '<div class="stat-cell"><span>'+t.overtimePayLbl+'</span><span class="v o mono">'+fmtMoney(overtimePayMonth)+' '+settings.currency+'</span></div>';
       }
       html += '<div class="stat-cell"><span>'+t.restDaysCountLbl+'</span><span class="v mono">'+ms.restCount+'</span></div>';
       html += '<div class="stat-cell"><span>'+t.holidaysCountLbl+'</span><span class="v mono">'+ms.holidayCount+'</span></div>';
       html += '<div class="stat-cell"><span>'+t.absenceLbl+'</span><span class="v a mono">'+ms.absenceCount+'</span></div>';
       html += '</div>';
+      if(dRate>0 || hRateMonth>0){
+        html += '<div class="stat-grid">';
+        var workPay=0, holidaysPay=0, restPay=0, absenceDeduction=0;
+        if(dRate>0){
+          workPay = dRate*workDaysCount;
+          holidaysPay = dRate*ms.holidayCount;
+          restPay = dRate*ms.restCount;
+          absenceDeduction = dRate*ms.absenceCount;
+          html += '<div class="stat-cell"><span>'+t.workDaysPayLbl+'</span><span class="v mono">'+fmtMoney(workPay)+' '+settings.currency+'</span></div>';
+          html += '<div class="stat-cell"><span>'+t.holidaysPayLbl+'</span><span class="v mono">'+fmtMoney(holidaysPay)+' '+settings.currency+'</span></div>';
+          html += '<div class="stat-cell"><span>'+t.restPayLbl+'</span><span class="v mono">'+fmtMoney(restPay)+' '+settings.currency+'</span></div>';
+          html += '<div class="stat-cell"><span>'+t.absenceDeductionLbl+'</span><span class="v a mono">-'+fmtMoney(absenceDeduction)+' '+settings.currency+'</span></div>';
+          html += '<div class="stat-cell"><span>'+t.totalSalaryDueLbl+'</span><span class="v mono">'+fmtMoney(workPay+holidaysPay+restPay)+' '+settings.currency+'</span></div>';
+        }
+        html += '<div class="stat-cell"><span>'+t.grandTotalLbl+'</span><span class="v o mono">'+fmtMoney(workPay+holidaysPay+restPay+overtimePayMonth)+' '+settings.currency+'</span></div>';
+        html += '</div>';
+      }
 
       function dayRowHtml(item){
         var d = new Date(item.date+'T00:00:00');
@@ -840,19 +896,22 @@
 
   function loadSettingsUI(){
     document.getElementById('setStandardHours').value = settings.standardHours;
-    document.getElementById('setHourlyRate').value = settings.hourlyRate || '';
+    document.getElementById('setComprehensiveSalary').value = settings.comprehensiveSalary || '';
+    document.getElementById('setInsuranceWage').value = settings.insuranceWage || '';
     document.getElementById('setMultiplier').value = settings.multiplier;
     document.getElementById('setCurrency').value = settings.currency;
   }
   loadSettingsUI();
-  ['setStandardHours','setHourlyRate','setMultiplier','setCurrency'].forEach(function(id){
+  ['setStandardHours','setComprehensiveSalary','setInsuranceWage','setMultiplier','setCurrency'].forEach(function(id){
     document.getElementById(id).addEventListener('change', function(){
       settings.standardHours = parseFloat(document.getElementById('setStandardHours').value)||8;
-      settings.hourlyRate = parseFloat(document.getElementById('setHourlyRate').value)||0;
+      settings.comprehensiveSalary = parseFloat(document.getElementById('setComprehensiveSalary').value)||0;
+      settings.insuranceWage = parseFloat(document.getElementById('setInsuranceWage').value)||0;
       settings.multiplier = parseFloat(document.getElementById('setMultiplier').value)||1.7;
       settings.currency = document.getElementById('setCurrency').value||'جنيه';
       saveJSON(SETTINGS_KEY, settings);
       tick();
+      renderHistory();
     });
   });
 
@@ -992,7 +1051,7 @@
         localStorage.removeItem(REST_OVERRIDES_KEY);
         localStorage.removeItem(ABSENCES_KEY);
       }catch(e){}
-      settings = {standardHours:8, hourlyRate:0, multiplier:1.7, currency:'جنيه', restDays:[5]};
+      settings = {standardHours:8, comprehensiveSalary:0, insuranceWage:0, multiplier:1.7, currency:'جنيه', restDays:[5]};
       session = null; entries = []; holidays = []; restOverrides = []; absences = [];
       loadSettingsUI(); renderRestDayChips(); renderHolidayList(); renderHistory(); tick();
     }
