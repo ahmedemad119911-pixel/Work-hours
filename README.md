@@ -1,14 +1,14 @@
-<!DOCTYPE html>
+<!DOCTYPE ht
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ساعات الشغل</title>
+
 <meta name="theme-color" content="#0B0D12">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ساعات الشغل">
+<meta name="apple-mobile-web-app-title" content=" ">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%230B0D12'/%3E%3Ccircle cx='90' cy='96' r='58' fill='none' stroke='%23C8F25A' stroke-width='9'/%3E%3Cline x1='90' y1='96' x2='90' y2='58' stroke='%23EFE9DA' stroke-width='8' stroke-linecap='round'/%3E%3Cline x1='90' y1='96' x2='118' y2='104' stroke='%23EFE9DA' stroke-width='8' stroke-linecap='round'/%3E%3Crect x='72' y='22' width='36' height='16' rx='6' fill='%23C8F25A'/%3E%3C/svg%3E">
 <style>
 :root{color-scheme:dark;--bg:#0B0D12;--surface:#141821;--surface2:#1C2230;--ink:#F2F4F8;--ink-soft:#8A93A6;--line:#232A3A;--accent:#C8F25A;--accent-ink:#0B0D12;--regular:#C8F25A;--overtime:#FF7A59;--overtime-soft:#2A1A17;--danger:#FF6B6B;--morning:#FFC857;--evening:#7C9CFF;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
